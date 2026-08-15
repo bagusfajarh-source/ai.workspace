@@ -1,0 +1,925 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Building2, 
+  Bot, 
+  Send, 
+  Settings, 
+  Database, 
+  FileText, 
+  UserCheck, 
+  Briefcase, 
+  Truck, 
+  ShieldCheck, 
+  PhoneCall, 
+  Cpu, 
+  TrendingUp, 
+  DollarSign, 
+  ChevronRight, 
+  Plus, 
+  Trash2, 
+  Copy, 
+  Check, 
+  Sparkles, 
+  Layers, 
+  Sliders, 
+  Server, 
+  Zap, 
+  Menu, 
+  X,
+  RefreshCw,
+  Key,
+  Globe,
+  HelpCircle,
+  BarChart3,
+  Search
+} from 'lucide-react';
+
+// --- DAFTAR DIVISI KANTOR ---
+const DIVISIONS = [
+  {
+    id: 'finance',
+    name: 'Finance & Akuntansi',
+    icon: DollarSign,
+    color: 'bg-emerald-500',
+    lightBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    description: 'Analisis keuangan, budgeting, laporan pajak, audit biaya, & peramalan arus kas.',
+    systemPrompt: 'Anda adalah Asisten AI Keuangan Enterprise Senior. Tugas Anda adalah membantu analisis keuangan, formulir akuntansi, kalkulasi ROI, laporan pajak, dan pemeriksaan rasio keuangan secara akurat dan patuh regulasi.',
+    prompts: [
+      'Buatkan template laporan rekonsiliasi bank bulanan',
+      'Analisis rasio likuiditas dan solvabilitas dari data berikut',
+      'Rancangkan draft SOP pengajuan kas kecil (petty cash)'
+    ]
+  },
+  {
+    id: 'it',
+    name: 'IT & Digital Infrastructure',
+    icon: Cpu,
+    color: 'bg-blue-600',
+    lightBg: 'bg-blue-50 text-blue-700 border-blue-200',
+    description: 'Code review, DevOps script, analisis keamanan siber, troubleshooting & arsitektur.',
+    systemPrompt: 'Anda adalah Principal Software Engineer & Cybersecurity Lead. Berikan solusi teknis yang aman, scalable, efisien, lengkap dengan contoh kode, arsitektur sistem, atau skrip otomatisasi.',
+    prompts: [
+      'Review skrip Python ini untuk optimalisasi memori dan keamanan',
+      'Tuliskan konfigurasi Nginx reverse proxy dengan SSL security headers',
+      'Buat draft Policy Keamanan Cyber untuk akses jarak jauh (VPN)'
+    ]
+  },
+  {
+    id: 'gudang',
+    name: 'Gudang & Logistik',
+    icon: Truck,
+    color: 'bg-amber-600',
+    lightBg: 'bg-amber-50 text-amber-700 border-amber-200',
+    description: 'Manajemen stok, rotasi FIFO/LIFO, pengiriman, & efisiensi pergudangan.',
+    systemPrompt: 'Anda adalah Manajer Logistik & Operations Pergudangan. Bantu optimasi alur barang, manajemen inventaris, audit stok opname, dan efisiensi rantai pasok.',
+    prompts: [
+      'Buatkan kalkulasi Reorder Point (ROP) & Safety Stock',
+      'Draft SOP penerimaan dan inspeksi barang dari supplier',
+      'Rancang strategi kurangi dead stock di gudang utama'
+    ]
+  },
+  {
+    id: 'sales',
+    name: 'Sales & Revenue',
+    icon: TrendingUp,
+    color: 'bg-rose-600',
+    lightBg: 'bg-rose-50 text-rose-700 border-rose-200',
+    description: 'Pitch deck, naskah presentasi client, proposal penjualan, & strategi closing.',
+    systemPrompt: 'Anda adalah Chief Revenue Officer & Master Sales Coach. Bantu tim menyusun penawaran bernilai tinggi, menangani keberatan (objection handling), dan mempercepat siklus penjualan B2B/B2C.',
+    prompts: [
+      'Buatkan email penawaran B2B untuk klien prospek enterprise',
+      'Susun script objection handling untuk harga yang dianggap mahal',
+      'Draft struktur pitch deck penjualan 10 slide'
+    ]
+  },
+  {
+    id: 'hr',
+    name: 'Human Resources (HR)',
+    icon: UserCheck,
+    color: 'bg-purple-600',
+    lightBg: 'bg-purple-50 text-purple-700 border-purple-200',
+    description: 'Rekrutmen, Key Performance Indicators (KPI), hubungan industrial, & pelatihan.',
+    systemPrompt: 'Anda adalah Konsultan HR Enterprise & Legal Ketenagakerjaan. Bantu membuat Job Description, matriks penilaian KPI, draft Surat Peringatan, program on-boarding, dan konsultasi budaya kerja.',
+    prompts: [
+      'Buat Job Description & KPI Key Metrics untuk Senior Data Analyst',
+      'Rancangkan draft Surat Peringatan Pertama (SP1) keterlambatan',
+      'Susun kerangka program Onboarding Karyawan Baru 30-60-90 Hari'
+    ]
+  },
+  {
+    id: 'ga',
+    name: 'General Affairs (GA)',
+    icon: Building2,
+    color: 'bg-teal-600',
+    lightBg: 'bg-teal-50 text-teal-700 border-teal-200',
+    description: 'Fasilitas kantor, pengadaan operasional harian, manajemen aset, & legal izin.',
+    systemPrompt: 'Anda adalah Kepala General Affairs & Facility Management. Tugas Anda adalah membantu efisiensi operasional gedung, pengadaan fasilitas, perawatan aset kantor, dan hubungan vendor servis.',
+    prompts: [
+      'Buat jadwal preventative maintenance pendingin ruangan (AC) kantor',
+      'Draft perbandingan vendor katering makan siang karyawan',
+      'Susun SOP penggunaan kendaraan operasional kantor'
+    ]
+  },
+  {
+    id: 'mis',
+    name: 'MIS & Data Analytics',
+    icon: Database,
+    color: 'bg-indigo-600',
+    lightBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    description: 'SQL Queries, pembersihan data, visualisasi BI, & arsitektur data warehouse.',
+    systemPrompt: 'Anda adalah Chief Data Officer & BI Specialist. Bantu pembuatan kueri SQL kompleks, visualisasi data, skrip manipulasi data (Pandas/R), dan penyiapan laporan manajemen (MIS).',
+    prompts: [
+      'Tuliskan query SQL PostgreSQL untuk menghitung Monthly Active Users & Churn Rate',
+      'Bantu buat skrip Python Pandas untuk pembersihan data missing values',
+      'Rekomendasikan struktur dashboard Executive Performance di Looker/PowerBI'
+    ]
+  },
+  {
+    id: 'busdev',
+    name: 'Business Development',
+    icon: Briefcase,
+    color: 'bg-cyan-600',
+    lightBg: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    description: 'Riset pasar, analisis kompetitor, kemitraan strategis, & ekspansi bisnis.',
+    systemPrompt: 'Anda adalah VP Business Development & Strategic Growth. Berikan analisis pasar yang tajam (SWOT, PESTEL), usulan kemitraan (MoU), serta evaluasi peluang bisnis baru.',
+    prompts: [
+      'Lakukan analisis SWOT untuk ekspansi produk SaaS ke pasar Asia Tenggara',
+      'Draft Memorandum of Understanding (MoU) kemitraan strategis 2 perusahaan',
+      'Susun kerangka riset pasar kompetitor di industri logistik digital'
+    ]
+  },
+  {
+    id: 'purchasing',
+    name: 'Purchasing & Procurement',
+    icon: FileText,
+    color: 'bg-orange-600',
+    lightBg: 'bg-orange-50 text-orange-700 border-orange-200',
+    description: 'Negosiasi vendor, Request for Proposal (RFP), Purchase Order, & audit pengadaan.',
+    systemPrompt: 'Anda adalah Manajer Pengadaan & Sourcing Specialist Enterprise. Bantu pembuatan berkas RFP, skrip negosiasi harga vendor, matriks scoring supplier, dan kontrak pembelian.',
+    prompts: [
+      'Buat template dokumen Request for Proposal (RFP) pengadaan hardware IT',
+      'Susun daftar poin negosiasi untuk menurunkan harga lisensi software 15%',
+      'Rancang form evaluasi kinerja kualitatif & kuantitatif vendor'
+    ]
+  },
+  {
+    id: 'telemarketing',
+    name: 'Telemarketing & Telesales',
+    icon: PhoneCall,
+    color: 'bg-pink-600',
+    lightBg: 'bg-pink-50 text-pink-700 border-pink-200',
+    description: 'Script telepon outbound, follow-up prospek, penanganan penolakan, & survey.',
+    systemPrompt: 'Anda adalah Telesales Trainer & Outbound Calling Strategist. Susun script telepon persuasif, hook pembuka yang menarik perhatian, dan metode follow-up telepon yang tidak mengganggu.',
+    prompts: [
+      'Buat script cold calling 30 detik pembuka untuk produk asuransi/B2B',
+      'Susun panduan mengatasi respon penolakan "Saya sedang sibuk / Kirim email saja"',
+      'Draft skrip survey kepuasan pelanggan pasca-penjualan via telepon'
+    ]
+  },
+  {
+    id: 'audit',
+    name: 'Internal Audit & Compliance',
+    icon: ShieldCheck,
+    color: 'bg-slate-700',
+    lightBg: 'bg-slate-100 text-slate-800 border-slate-300',
+    description: 'Pemeriksaan kepatuhan SOP, mitigasi risiko bisnis, audit internal, & deteksi fraud.',
+    systemPrompt: 'Anda adalah Chief Internal Auditor & Risk Officer. Bantu verifikasi kepatuhan SOP internal, penyiapan checklist audit berkala, identifikasi potensi risiko operasional dan kecurangan (fraud).',
+    prompts: [
+      'Buatkan checklist audit internal operasional kas & transaksi keuangan',
+      'Susun matriks risiko operasional (Risk Register) beserta tindakan mitigasinya',
+      'Review dan temukan potensi selisih/lemah kepatuhan dari prosedur berikut'
+    ]
+  }
+];
+
+// --- 9 AI ROUTERS ---
+const AI_ROUTERS = [
+  {
+    id: 'router-1',
+    name: 'Router 1: Auto-Smart Router',
+    badge: 'Rekomendasi',
+    description: 'Menyeimbangkan kecerdasan, kecepatan, dan biaya secara otomatis.',
+    model: 'gpt-4o',
+    icon: Sparkles,
+    color: 'text-amber-500'
+  },
+  {
+    id: 'router-2',
+    name: 'Router 2: Deep Reasoning & Math',
+    badge: 'Kompleks',
+    description: 'Didesain untuk logika rumit, kalkulasi, audit, dan analisis mendalam (o3-mini / R1).',
+    model: 'o3-mini',
+    icon: Zap,
+    color: 'text-purple-500'
+  },
+  {
+    id: 'router-3',
+    name: 'Router 3: Fast & Low Latency',
+    badge: 'Super Cepat',
+    description: 'Respon kilat untuk pencarian cepat, draf ringan, dan balasan pesan harian.',
+    model: 'gpt-4o-mini',
+    icon: RefreshCw,
+    color: 'text-green-500'
+  },
+  {
+    id: 'router-4',
+    name: 'Router 4: Code & Architecture Master',
+    badge: 'IT Special',
+    description: 'Dioptimalkan untuk penulisan kode IT, query MIS data, dan DevOps.',
+    model: 'claude-3-5-sonnet',
+    icon: Cpu,
+    color: 'text-blue-500'
+  },
+  {
+    id: 'router-5',
+    name: 'Router 5: Finance & Analytics Guard',
+    badge: 'Presisi Tinggi',
+    description: 'Routing khusus kalkulasi angka, akuntansi, dan analisis risiko finansial.',
+    model: 'gpt-4o',
+    icon: DollarSign,
+    color: 'text-emerald-500'
+  },
+  {
+    id: 'router-6',
+    name: 'Router 6: Sales & Communication Expert',
+    badge: 'Kreatif',
+    description: 'Dioptimalkan untuk copywriting persuasif, negosiasi, dan skrip telemarketing.',
+    model: 'gpt-4o',
+    icon: PhoneCall,
+    color: 'text-pink-500'
+  },
+  {
+    id: 'router-7',
+    name: 'Router 7: Enterprise Compliance & Audit',
+    badge: 'Legal & SOP',
+    description: 'Pemeriksaan ketat terhadap regulasi hukum, SOP kantor, dan tata kelola.',
+    model: 'gpt-4o',
+    icon: ShieldCheck,
+    color: 'text-slate-600'
+  },
+  {
+    id: 'router-8',
+    name: 'Router 8: Multi-Language & Translation',
+    badge: 'Bahasawan',
+    description: 'Khusus penerjemahan dokumen bisnis antar bahasa dengan konteks enterprise.',
+    model: 'gpt-4o-mini',
+    icon: Globe,
+    color: 'text-teal-500'
+  },
+  {
+    id: 'router-9',
+    name: 'Router 9: High-Privacy / On-Premise Gateway',
+    badge: 'Privasi Super',
+    description: 'Routing melalui server lokal enterprise tanpa menyimpan log eksternal.',
+    model: 'local-enterprise-llm',
+    icon: Server,
+    color: 'text-indigo-500'
+  }
+];
+
+export default function App() {
+  // State Divisi & Chat
+  const [activeDivision, setActiveDivision] = useState(DIVISIONS[0]);
+  const [selectedRouter, setSelectedRouter] = useState(AI_ROUTERS[0]);
+  const [messages, setMessages] = useState({});
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  // State UI Sidebar & Settings
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRouterDropdownOpen, setIsRouterDropdownOpen] = useState(false);
+  const [searchDivision, setSearchDivision] = useState('');
+
+  // Config OpenAI Compatible Endpoint
+  const [apiConfig, setApiConfig] = useState({
+    baseUrl: 'https://api.openai.com/v1',
+    apiKey: '',
+    customModel: '',
+    temperature: 0.7,
+  });
+
+  const messagesEndRef = useRef(null);
+
+  // Auto scroll ke pesan terbaru
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, activeDivision]);
+
+  // Pesan aktif berdasarkan divisi saat ini
+  const currentMessages = messages[activeDivision.id] || [
+    {
+      role: 'assistant',
+      content: `Selamat datang di Workspace **${activeDivision.name}**!\n\n${activeDivision.description}\n\nSaya telah dikonfigurasi dengan panduan khusus divisi ini. Silakan pilih rekomendasi perintah cepat di atas atau ketik instruksi Anda.`,
+      routerUsed: selectedRouter.name,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ];
+
+  // Kirim Pesan Ke AI Agent (OpenAI Compatible)
+  const handleSendMessage = async (customPrompt) => {
+    const textToSend = customPrompt || inputMessage;
+    if (!textToSend.trim() || isLoading) return;
+
+    const userMessage = {
+      role: 'user',
+      content: textToSend,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Update state pesan lokal
+    const updatedHistory = [...currentMessages, userMessage];
+    setMessages(prev => ({ ...prev, [activeDivision.id]: updatedHistory }));
+    if (!customPrompt) setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      // Jika API Key diset, panggil OpenAI-compatible Endpoint secara riil
+      if (apiConfig.apiKey.trim()) {
+        const targetModel = apiConfig.customModel || selectedRouter.model;
+        const response = await fetch(`${apiConfig.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiConfig.apiKey}`
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            temperature: parseFloat(apiConfig.temperature),
+            messages: [
+              { role: 'system', content: `${activeDivision.systemPrompt}\n[Router Active: ${selectedRouter.name}]` },
+              ...updatedHistory.map(m => ({ role: m.role, content: m.content }))
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const aiText = data.choices?.[0]?.message?.content || 'Tidak ada respon dari server AI.';
+
+        setMessages(prev => ({
+          ...prev,
+          [activeDivision.id]: [
+            ...updatedHistory,
+            {
+              role: 'assistant',
+              content: aiText,
+              routerUsed: selectedRouter.name,
+              modelUsed: targetModel,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]
+        }));
+      } else {
+        // Mode Simulasi Pintar jika belum memasukkan API Key
+        await new Promise(resolve => setTimeout(resolve, 1400));
+        const mockResponse = generateMockResponse(activeDivision.id, textToSend, selectedRouter);
+
+        setMessages(prev => ({
+          ...prev,
+          [activeDivision.id]: [
+            ...updatedHistory,
+            {
+              role: 'assistant',
+              content: mockResponse,
+              routerUsed: selectedRouter.name,
+              modelUsed: selectedRouter.model + ' (Demo Mode)',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]
+        }));
+      }
+    } catch (err) {
+      setMessages(prev => ({
+        ...prev,
+        [activeDivision.id]: [
+          ...updatedHistory,
+          {
+            role: 'assistant',
+            content: `⚠️ **Gagal terhubung ke AI Gateway:** ${err.message}\n\n*Tips:* Periksa kembali Endpoint URL & API Key Anda pada menu **Pengaturan API** di pojok kanan atas.`,
+            isError: true,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mock generator respon spesifik divisi
+  const generateMockResponse = (divId, text, router) => {
+    return `[Diproses via ${router.name}]\n\nBerikut adalah draf & rekomendasi analisis untuk divisi **${activeDivision.name}** terkait permintaan Anda: "${text}":\n\n` +
+      `### 📋 Hasil Analisis Utama\n` +
+      `1. **Konteks Operasional:** Permintaan telah disesuaikan dengan standar regulasi dan SOP divisi ${activeDivision.name}.\n` +
+      `2. **Rekomendasi Tindakan:**\n` +
+      `   - Melakukan tinjauan awal berkas dan verifikasi data terkait.\n` +
+      `   - Menggunakan parameter risko minimal berdasarkan Router aktif (${router.badge}).\n` +
+      `   - Memastikan otorisasi dari Kepala Divisi sebelum eksekusi final.\n\n` +
+      `\`\`\`text\n` +
+      `// Draf Catatan Sistem Divisi ${activeDivision.name.toUpperCase()}\n` +
+      `STATUS: VERIFIED | ROUTER: ${router.id.toUpperCase()} | AUDIT_TRAIL: OK\n` +
+      `\`\`\`\n\n` +
+      `*Catatan: Ini adalah respon simulasi. Hubungkan API Key OpenAI/Router Anda di menu Pengaturan untuk respon AI riil.*`;
+  };
+
+  const handleCopy = (text, idx) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const clearChatHistory = () => {
+    setMessages(prev => ({
+      ...prev,
+      [activeDivision.id]: [
+        {
+          role: 'assistant',
+          content: `Chat history divisi **${activeDivision.name}** telah dibersihkan. Ada yang bisa saya bantu selanjutnya?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]
+    }));
+  };
+
+  const filteredDivisions = DIVISIONS.filter(d => 
+    d.name.toLowerCase().includes(searchDivision.toLowerCase()) ||
+    d.description.toLowerCase().includes(searchDivision.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-screen bg-slate-900 text-slate-100 font-sans antialiased overflow-hidden">
+      
+      {/* ================= SIDEBAR DIVISI ================= */}
+      <aside 
+        className={`${
+          isSidebarOpen ? 'w-72' : 'w-0 -translate-x-full md:w-20 md:translate-x-0'
+        } transition-all duration-300 ease-in-out bg-slate-950 border-r border-slate-800 flex flex-col z-30 relative`}
+      >
+        {/* Header App */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20 shrink-0">
+              <Layers className="w-5 h-5 text-white" />
+            </div>
+            {isSidebarOpen && (
+              <div>
+                <h1 className="font-bold text-base tracking-wide text-white leading-tight">Nexus AI</h1>
+                <p className="text-xs text-slate-400 font-medium">Enterprise Hub</p>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white md:hidden"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search Bar Divisi */}
+        {isSidebarOpen && (
+          <div className="px-3 pt-3 pb-1">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+              <input 
+                type="text"
+                placeholder="Cari Divisi Kantor..."
+                value={searchDivision}
+                onChange={(e) => setSearchDivision(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Navigation List Divisi */}
+        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1 custom-scrollbar">
+          {isSidebarOpen && (
+            <div className="px-3 pb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Workspace Divisi ({filteredDivisions.length})
+            </div>
+          )}
+          {filteredDivisions.map((div) => {
+            const IconComponent = div.icon;
+            const isActive = activeDivision.id === div.id;
+            return (
+              <button
+                key={div.id}
+                onClick={() => setActiveDivision(div)}
+                title={!isSidebarOpen ? div.name : undefined}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 group text-left ${
+                  isActive 
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/30 font-medium shadow-sm' 
+                    : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-transparent'
+                }`}
+              >
+                <div className={`p-2 rounded-lg shrink-0 transition-transform group-hover:scale-105 ${
+                  isActive ? div.color + ' text-white' : 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-slate-200'
+                }`}>
+                  <IconComponent className="w-4 h-4" />
+                </div>
+                {isSidebarOpen && (
+                  <div className="truncate flex-1">
+                    <div className="text-xs font-semibold truncate leading-snug">{div.name}</div>
+                    <div className="text-[10px] text-slate-500 truncate">{div.prompts.length} Prompt bawaan</div>
+                  </div>
+                )}
+                {isSidebarOpen && isActive && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* User Info / Status Server Footer */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 truncate">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              {isSidebarOpen && (
+                <span className="text-xs text-slate-400 truncate font-mono">
+                  {apiConfig.apiKey ? 'Connected API' : 'Demo Mode (Simulasi)'}
+                </span>
+              )}
+            </div>
+            {isSidebarOpen && (
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                title="Pengaturan API"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* ================= MAIN CONTENT WORKSPACE ================= */}
+      <main className="flex-1 flex flex-col bg-slate-900 overflow-hidden relative">
+        
+        {/* Top Header Workspace */}
+        <header className="h-16 border-b border-slate-800 bg-slate-950/70 backdrop-blur px-4 md:px-6 flex items-center justify-between z-10 shrink-0">
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className={`p-2 rounded-xl ${activeDivision.color} text-white shadow-md`}>
+                <activeDivision.icon className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  {activeDivision.name}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-normal border border-slate-700">
+                    Workspace Divisi
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 hidden sm:block truncate max-w-md">
+                  {activeDivision.description}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Selector 9 Router AI */}
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <button
+                onClick={() => setIsRouterDropdownOpen(!isRouterDropdownOpen)}
+                className="flex items-center space-x-2 bg-slate-900 border border-slate-700 hover:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-slate-200 transition shadow-sm"
+              >
+                <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                <span className="font-medium hidden md:inline">{selectedRouter.name}</span>
+                <span className="font-medium md:hidden">{selectedRouter.id.toUpperCase()}</span>
+                <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-semibold">
+                  {selectedRouter.badge}
+                </span>
+              </button>
+
+              {/* Dropdown 9 Routers */}
+              {isRouterDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl py-2 z-50 divide-y divide-slate-800/50">
+                  <div className="px-3 py-2 text-xs font-semibold text-slate-400 flex items-center justify-between">
+                    <span>Pilih AI Router (9 Gateway)</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  </div>
+                  <div className="max-h-80 overflow-y-auto py-1">
+                    {AI_ROUTERS.map((r) => {
+                      const RIcon = r.icon;
+                      const isSelected = selectedRouter.id === r.id;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => {
+                            setSelectedRouter(r);
+                            setIsRouterDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2.5 flex items-start space-x-3 text-left hover:bg-slate-900 transition ${
+                            isSelected ? 'bg-blue-600/10 border-l-2 border-blue-500' : ''
+                          }`}
+                        >
+                          <RIcon className={`w-4 h-4 mt-0.5 ${r.color} shrink-0`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs font-semibold ${isSelected ? 'text-blue-400' : 'text-slate-200'}`}>
+                                {r.name}
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded">
+                                {r.badge}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 truncate mt-0.5">{r.description}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tombol Pengaturan API */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-xl text-slate-300 hover:text-white transition"
+              title="Pengaturan API & Model"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* System Prompt Banner Info */}
+        <div className="bg-slate-950/40 border-b border-slate-800/80 px-4 py-2 flex items-center justify-between text-xs text-slate-400">
+          <div className="flex items-center space-x-2 truncate">
+            <Bot className="w-4 h-4 text-blue-400 shrink-0" />
+            <span className="font-semibold text-slate-300">System Instruction:</span>
+            <span className="truncate text-slate-400 italic">"{activeDivision.systemPrompt}"</span>
+          </div>
+          <button 
+            onClick={clearChatHistory}
+            className="flex items-center space-x-1 text-slate-500 hover:text-rose-400 transition shrink-0 ml-2"
+            title="Bersihkan riwayat percakapan"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[11px]">Clear Chat</span>
+          </button>
+        </div>
+
+        {/* Stream Messages Container */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar">
+          
+          {/* Recommendation Prompt Chips */}
+          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 mb-4">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-slate-300 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Rekomendasi Prompt Cepat ({activeDivision.name}):</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {activeDivision.prompts.map((promptText, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSendMessage(promptText)}
+                  className="text-left text-xs bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 p-2.5 rounded-xl text-slate-300 transition line-clamp-2"
+                >
+                  "{promptText}"
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Render Chats */}
+          {currentMessages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`flex items-start space-x-3 ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {/* Bot Avatar */}
+              {msg.role === 'assistant' && (
+                <div className={`p-2 rounded-xl ${activeDivision.color} text-white shadow-md shrink-0 mt-1`}>
+                  <Bot className="w-4 h-4" />
+                </div>
+              )}
+
+              {/* Message Bubble */}
+              <div
+                className={`max-w-3xl rounded-2xl p-4 text-xs md:text-sm leading-relaxed shadow-sm relative group ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-tr-none'
+                    : msg.isError
+                    ? 'bg-rose-950/40 border border-rose-800/60 text-rose-200 rounded-tl-none'
+                    : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none'
+                }`}
+              >
+                {/* Meta Header Respon AI */}
+                {msg.role === 'assistant' && (
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                    <div className="flex items-center space-x-2">
+                      <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
+                        {msg.routerUsed || selectedRouter.name}
+                      </span>
+                      {msg.modelUsed && <span>• {msg.modelUsed}</span>}
+                    </div>
+                    <span>{msg.timestamp}</span>
+                  </div>
+                )}
+
+                {/* Content Render */}
+                <div className="whitespace-pre-wrap font-sans">
+                  {msg.content}
+                </div>
+
+                {/* User Timestamp */}
+                {msg.role === 'user' && (
+                  <div className="text-[9px] text-blue-200 text-right mt-1 font-mono">
+                    {msg.timestamp}
+                  </div>
+                )}
+
+                {/* Copy Button */}
+                {msg.role === 'assistant' && (
+                  <button
+                    onClick={() => handleCopy(msg.content, idx)}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900 border border-slate-700 opacity-0 group-hover:opacity-100 transition text-slate-400 hover:text-white"
+                    title="Salin Pesan"
+                  >
+                    {copiedIndex === idx ? (
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* User Avatar */}
+              {msg.role === 'user' && (
+                <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-200 shrink-0 mt-1">
+                  U
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="flex items-start space-x-3">
+              <div className={`p-2 rounded-xl ${activeDivision.color} text-white shrink-0 animate-pulse`}>
+                <Bot className="w-4 h-4" />
+              </div>
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl rounded-tl-none p-4 text-xs text-slate-400 flex items-center space-x-3">
+                <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
+                <span>AI Agent Divisi {activeDivision.name} sedang memproses via <strong>{selectedRouter.name}</strong>...</span>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Chat Input Section */}
+        <div className="p-4 border-t border-slate-800 bg-slate-950/80 backdrop-blur">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="relative max-w-4xl mx-auto"
+          >
+            <textarea
+              rows={2}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder={`Tanyakan sesuatu atau berikan instruksi untuk Divisi ${activeDivision.name}... (Tekan Enter untuk kirim)`}
+              className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-2xl pl-4 pr-12 py-3 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !inputMessage.trim()}
+              className={`absolute right-3 bottom-3.5 p-2 rounded-xl transition ${
+                isLoading || !inputMessage.trim()
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-600/30'
+              }`}
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+          <div className="flex items-center justify-between max-w-4xl mx-auto mt-2 text-[10px] text-slate-500">
+            <span>Shift + Enter untuk baris baru</span>
+            <span>Gateway Compliant OpenAI API v1</span>
+          </div>
+        </div>
+      </main>
+
+      {/* ================= MODAL SETTINGS OPENAI COMPATIBLE ================= */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button 
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-blue-600/20 text-blue-400 rounded-xl">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Pengaturan OpenAI Compatible API</h3>
+                <p className="text-xs text-slate-400">Sambungkan ke server AI (OpenAI, Local LLM, vLLM, OpenRouter)</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Base Endpoint URL</label>
+                <input 
+                  type="text"
+                  value={apiConfig.baseUrl}
+                  onChange={(e) => setApiConfig({ ...apiConfig, baseUrl: e.target.value })}
+                  placeholder="https://api.openai.com/v1"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Contoh: Local vLLM (http://localhost:8000/v1) / OpenRouter (https://openrouter.ai/api/v1)</p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">API Key</label>
+                <input 
+                  type="password"
+                  value={apiConfig.apiKey}
+                  onChange={(e) => setApiConfig({ ...apiConfig, apiKey: e.target.value })}
+                  placeholder="sk-proj-..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Kosongkan untuk tetap menjalankan mode simulasi pintar.</p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Override Default Model (Opsional)</label>
+                <input 
+                  type="text"
+                  value={apiConfig.customModel}
+                  onChange={(e) => setApiConfig({ ...apiConfig, customModel: e.target.value })}
+                  placeholder="Misal: gpt-4o, llama-3.3-70b-instruct, qwen-2.5"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                  <span>Temperature</span>
+                  <span>{apiConfig.temperature}</span>
+                </div>
+                <input 
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={apiConfig.temperature}
+                  onChange={(e) => setApiConfig({ ...apiConfig, temperature: e.target.value })}
+                  className="w-full accent-blue-500 bg-slate-800 rounded-lg cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg shadow-blue-600/30 text-xs"
+              >
+                Simpan & Sambungkan API
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
